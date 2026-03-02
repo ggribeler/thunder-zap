@@ -63,32 +63,54 @@ export default function EmbeddedSignup({ onSuccess }: Props) {
     document.body.appendChild(script);
   }, []);
 
-  async function handleSignup() {
+  function handleSignup() {
+    console.log("[EmbeddedSignup] handleSignup called");
+    console.log("[EmbeddedSignup] sdkReady:", sdkReady);
+    console.log("[EmbeddedSignup] FB object:", typeof window.FB);
+    console.log("[EmbeddedSignup] config_id:", process.env.NEXT_PUBLIC_EMBEDDED_SIGNUP_CONFIG_ID);
     setError("");
     setLoading(true);
 
-    window.FB.login(
-      async (response) => {
-        if (response.authResponse?.code) {
-          try {
-            await submitSignupCode(response.authResponse.code);
-            onSuccess();
-          } catch (err) {
-            setError(
-              err instanceof Error ? err.message : "Signup callback failed"
-            );
+    try {
+      window.FB.login(
+        (response) => {
+          console.log("[EmbeddedSignup] FB.login callback fired");
+          console.log("[EmbeddedSignup] response status:", response.status);
+          console.log("[EmbeddedSignup] authResponse:", JSON.stringify(response.authResponse));
+
+          if (response.authResponse?.code) {
+            console.log("[EmbeddedSignup] Got auth code, submitting to backend...");
+            submitSignupCode(response.authResponse.code)
+              .then(() => {
+                console.log("[EmbeddedSignup] submitSignupCode succeeded");
+                onSuccess();
+              })
+              .catch((err) => {
+                console.error("[EmbeddedSignup] submitSignupCode failed:", err);
+                setError(
+                  err instanceof Error ? err.message : "Signup callback failed"
+                );
+              })
+              .finally(() => {
+                setLoading(false);
+              });
+          } else {
+            console.warn("[EmbeddedSignup] No auth code - signup cancelled or failed");
+            setError("Signup was cancelled or failed");
+            setLoading(false);
           }
-        } else {
-          setError("Signup was cancelled or failed");
+        },
+        {
+          config_id: process.env.NEXT_PUBLIC_EMBEDDED_SIGNUP_CONFIG_ID || "",
+          response_type: "code",
+          override_default_response_type: true,
         }
-        setLoading(false);
-      },
-      {
-        config_id: process.env.NEXT_PUBLIC_EMBEDDED_SIGNUP_CONFIG_ID || "",
-        response_type: "code",
-        override_default_response_type: true,
-      }
-    );
+      );
+    } catch (err) {
+      console.error("[EmbeddedSignup] FB.login threw:", err);
+      setError(err instanceof Error ? err.message : "Failed to launch signup");
+      setLoading(false);
+    }
   }
 
   return (
