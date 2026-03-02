@@ -2,6 +2,7 @@ services:
   - type: web
     name: thunder-zap-api
     runtime: node
+    plan: free
     buildCommand: cd server && npm install && npm run build
     startCommand: cd server && npm start
     envVars:
@@ -16,15 +17,12 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: DATABASE_PATH
-        value: /opt/render/project/data/thunder.db
-    disk:
-      name: thunder-data
-      mountPath: /opt/render/project/data
-      sizeGB: 1
+        value: ./data/thunder.db
 
   - type: web
     name: thunder-zap-web
     runtime: node
+    plan: free
     buildCommand: cd client && npm install && npm run build
     startCommand: cd client && npm start
     envVars:
