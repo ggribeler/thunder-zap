@@ -1,4 +1,5 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+const rawUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+const API_URL = rawUrl.startsWith("http") ? rawUrl : `https://${rawUrl}`;
 
 let token: string | null = null;
 
