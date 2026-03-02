@@ -27,10 +27,7 @@ services:
     startCommand: cd client && npm start
     envVars:
       - key: NEXT_PUBLIC_API_URL
-        fromService:
-          name: thunder-zap-api
-          type: web
-          property: hostport
+        value: https://thunder-zap-api.onrender.com
       - key: NEXT_PUBLIC_META_APP_ID
         sync: false
       - key: NEXT_PUBLIC_EMBEDDED_SIGNUP_CONFIG_ID
