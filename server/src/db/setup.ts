@@ -1,6 +1,7 @@
 import Database from "better-sqlite3";
 import path from "path";
 import fs from "fs";
+import bcrypt from "bcrypt";
 
 let db: Database.Database;
 
@@ -50,6 +51,18 @@ export function getDb(): Database.Database {
       wa_message_id   TEXT
     );
   `);
+
+  // Seed test account
+  const existing = db
+    .prepare("SELECT id FROM users WHERE email = ?")
+    .get("admin@thunderzap.com");
+  if (!existing) {
+    const hash = bcrypt.hashSync("thunder123", 10);
+    db.prepare("INSERT INTO users (email, password_hash) VALUES (?, ?)").run(
+      "admin@thunderzap.com",
+      hash
+    );
+  }
 
   return db;
 }
