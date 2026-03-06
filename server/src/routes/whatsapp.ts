@@ -14,15 +14,18 @@ router.post(
   async (req: AuthRequest, res: Response) => {
     const META_APP_ID = process.env.META_APP_ID!;
     const META_APP_SECRET = process.env.META_APP_SECRET!;
-    const { code } = req.body;
+    const { code, phoneNumberId, wabaId, businessId } = req.body;
     const userId = req.userId!;
 
     console.log("[whatsapp/signup-callback] Received request from userId:", userId);
     console.log("[whatsapp/signup-callback] Code present:", !!code);
+    console.log("[whatsapp/signup-callback] phoneNumberId:", phoneNumberId);
+    console.log("[whatsapp/signup-callback] wabaId:", wabaId);
+    console.log("[whatsapp/signup-callback] businessId:", businessId);
 
-    if (!code) {
-      console.warn("[whatsapp/signup-callback] No code provided");
-      res.status(400).json({ error: "Code is required" });
+    if (!code || !phoneNumberId || !wabaId || !businessId) {
+      console.warn("[whatsapp/signup-callback] Missing required fields");
+      res.status(400).json({ error: "Code, phoneNumberId, wabaId, and businessId are required" });
       return;
     }
 
@@ -49,59 +52,6 @@ router.post(
       }
 
       const accessToken = tokenData.access_token;
-
-      // Get shared WABA info using the debug_token endpoint
-      const debugUrl = `https://graph.facebook.com/v25.0/debug_token?input_token=${accessToken}&access_token=${META_APP_ID}|${META_APP_SECRET}`;
-      console.log("[whatsapp/signup-callback] Fetching debug_token info...");
-      console.log(`[api-out] GET ${debugUrl} token=${accessToken}`);
-      const debugRes = await fetch(debugUrl);
-      const debugData = (await debugRes.json()) as {
-        data?: {
-          granular_scopes?: Array<{
-            scope: string;
-            target_ids?: string[];
-          }>;
-        };
-      };
-
-      console.log("[whatsapp/signup-callback] Debug token status:", debugRes.status);
-      console.log("[whatsapp/signup-callback] Granular scopes:", JSON.stringify(debugData.data?.granular_scopes));
-
-      // Extract WABA ID from the granular scopes
-      const wabaScope = debugData.data?.granular_scopes?.find(
-        (s) => s.scope === "whatsapp_business_management"
-      );
-      const wabaId = wabaScope?.target_ids?.[0];
-
-      console.log("[whatsapp/signup-callback] WABA ID:", wabaId);
-
-      if (!wabaId) {
-        console.error("[whatsapp/signup-callback] Could not determine WABA ID");
-        res.status(400).json({ error: "Could not determine WABA ID" });
-        return;
-      }
-
-      // Get phone numbers for this WABA
-      const phonesUrl = `https://graph.facebook.com/v25.0/${wabaId}/phone_numbers?access_token=${accessToken}`;
-      console.log("[whatsapp/signup-callback] Fetching phone numbers...");
-      console.log(`[api-out] GET ${phonesUrl} token=${accessToken}`);
-      const phonesRes = await fetch(phonesUrl);
-      const phonesData = (await phonesRes.json()) as {
-        data?: Array<{ id: string; display_phone_number: string }>;
-      };
-
-      console.log("[whatsapp/signup-callback] Phone numbers status:", phonesRes.status);
-      console.log("[whatsapp/signup-callback] Phone numbers found:", phonesData.data?.length ?? 0);
-      if (phonesData.data?.[0]) {
-        console.log("[whatsapp/signup-callback] First phone:", phonesData.data[0].display_phone_number, "id:", phonesData.data[0].id);
-      }
-
-      const phoneNumberId = phonesData.data?.[0]?.id;
-      if (!phoneNumberId) {
-        console.error("[whatsapp/signup-callback] No phone numbers found");
-        res.status(400).json({ error: "No phone numbers found for this WABA" });
-        return;
-      }
 
       // Register the phone number with WhatsApp Cloud API
       console.log("[whatsapp/signup-callback] Registering phone number...");
@@ -141,10 +91,10 @@ router.post(
 
       // Store in database
       console.log("[whatsapp/signup-callback] Storing account in database...");
-      createWhatsAppAccount(userId, wabaId, phoneNumberId, accessToken);
+      createWhatsAppAccount(userId, wabaId, phoneNumberId, accessToken, businessId);
 
-      console.log("[whatsapp/signup-callback] Success! phoneNumberId:", phoneNumberId, "wabaId:", wabaId);
-      res.json({ phoneNumberId, wabaId });
+      console.log("[whatsapp/signup-callback] Success! phoneNumberId:", phoneNumberId, "wabaId:", wabaId, "businessId:", businessId);
+      res.json({ phoneNumberId, wabaId, businessId });
     } catch (err) {
       console.error("[whatsapp/signup-callback] Unhandled error:", err);
       res.status(500).json({ error: "Signup processing failed" });
@@ -161,6 +111,7 @@ router.get("/account", authMiddleware, (req: AuthRequest, res: Response) => {
       connected: true,
       phoneNumberId: account.phone_number_id,
       wabaId: account.waba_id,
+      businessId: account.business_id,
     });
   } else {
     res.json({ connected: false });

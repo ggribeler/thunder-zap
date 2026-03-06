@@ -30,6 +30,7 @@ export function getDb(): Database.Database {
       waba_id         TEXT NOT NULL,
       phone_number_id TEXT NOT NULL,
       access_token    TEXT NOT NULL,
+      business_id     TEXT NOT NULL,
       created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 

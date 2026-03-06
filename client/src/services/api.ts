@@ -57,10 +57,15 @@ export async function login(email: string, password: string) {
 
 // --- WhatsApp ---
 
-export async function submitSignupCode(code: string) {
+export async function submitSignupCode(
+  code: string,
+  phoneNumberId: string,
+  wabaId: string,
+  businessId: string
+) {
   return request<{ phoneNumberId: string }>("/api/whatsapp/signup-callback", {
     method: "POST",
-    body: JSON.stringify({ code }),
+    body: JSON.stringify({ code, phoneNumberId, wabaId, businessId }),
   });
 }
 
@@ -69,6 +74,7 @@ export async function getWhatsAppAccount() {
     connected: boolean;
     phoneNumberId?: string;
     wabaId?: string;
+    businessId?: string;
   }>("/api/whatsapp/account");
 }
 

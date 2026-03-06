@@ -25,14 +25,15 @@ export function createWhatsAppAccount(
   userId: number,
   wabaId: string,
   phoneNumberId: string,
-  accessToken: string
+  accessToken: string,
+  businessId: string
 ) {
   const db = getDb();
   return db
     .prepare(
-      "INSERT INTO whatsapp_accounts (user_id, waba_id, phone_number_id, access_token) VALUES (?, ?, ?, ?)"
+      "INSERT INTO whatsapp_accounts (user_id, waba_id, phone_number_id, access_token, business_id) VALUES (?, ?, ?, ?, ?)"
     )
-    .run(userId, wabaId, phoneNumberId, accessToken);
+    .run(userId, wabaId, phoneNumberId, accessToken, businessId);
 }
 
 export function getWhatsAppAccountByUser(userId: number) {
@@ -46,6 +47,7 @@ export function getWhatsAppAccountByUser(userId: number) {
         waba_id: string;
         phone_number_id: string;
         access_token: string;
+        business_id: string;
       }
     | undefined;
 }
@@ -61,6 +63,7 @@ export function getWhatsAppAccountByPhoneNumberId(phoneNumberId: string) {
         waba_id: string;
         phone_number_id: string;
         access_token: string;
+        business_id: string;
       }
     | undefined;
 }

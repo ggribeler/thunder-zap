@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button, Alert, CircularProgress } from "@mui/material";
 import { submitSignupCode } from "@/services/api";
 
@@ -40,6 +40,7 @@ export default function EmbeddedSignup({ onSuccess }: Props) {
   const [sdkReady, setSdkReady] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const signupDataRef = useRef<{ phoneNumberId: string; wabaId: string; businessId: string } | null>(null);
 
   useEffect(() => {
     // Listen for Embedded Signup session logging messages
@@ -58,7 +59,12 @@ export default function EmbeddedSignup({ onSuccess }: Props) {
 
         if (data.type === "WA_EMBEDDED_SIGNUP") {
           if (data.event === "FINISH") {
-            console.log("[EmbeddedSignup] Signup finished. Phone:", data.data?.phone_number_id, "WABA:", data.data?.waba_id);
+            console.log("[EmbeddedSignup] Signup finished. Phone:", data.data?.phone_number_id, "WABA:", data.data?.waba_id, "Business:", data.data?.business_id);
+            signupDataRef.current = {
+              phoneNumberId: data.data?.phone_number_id,
+              wabaId: data.data?.waba_id,
+              businessId: data.data?.business_id,
+            };
           } else if (data.event === "CANCEL") {
             console.log("[EmbeddedSignup] Signup cancelled at step:", data.data?.current_step);
           } else if (data.event === "ERROR") {
@@ -116,8 +122,14 @@ export default function EmbeddedSignup({ onSuccess }: Props) {
           console.log("[EmbeddedSignup] authResponse:", JSON.stringify(response.authResponse));
 
           if (response.authResponse?.code) {
+            const signupData = signupDataRef.current;
+            if (!signupData) {
+              setError("Missing signup data from Embedded Signup flow");
+              setLoading(false);
+              return;
+            }
             console.log("[EmbeddedSignup] Got auth code, submitting to backend...");
-            submitSignupCode(response.authResponse.code)
+            submitSignupCode(response.authResponse.code, signupData.phoneNumberId, signupData.wabaId, signupData.businessId)
               .then(() => {
                 console.log("[EmbeddedSignup] submitSignupCode succeeded");
                 onSuccess();
