@@ -7,6 +7,7 @@ const router = Router();
 
 router.post("/register", async (req: Request, res: Response) => {
   const { email, password } = req.body;
+  console.log("[api-in] POST /register", JSON.stringify({ email }));
 
   if (!email || !password) {
     res.status(400).json({ error: "Email and password are required" });
@@ -27,6 +28,7 @@ router.post("/register", async (req: Request, res: Response) => {
 
 router.post("/login", async (req: Request, res: Response) => {
   const { email, password } = req.body;
+  console.log("[api-in] POST /login", JSON.stringify({ email }));
 
   if (!email || !password) {
     res.status(400).json({ error: "Email and password are required" });

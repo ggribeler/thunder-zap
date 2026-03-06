@@ -25,6 +25,7 @@ app.use("/api/conversations", conversationRoutes);
 app.use("/api/webhook", webhookRoutes);
 
 app.get("/api/health", (_req, res) => {
+  console.log("[api-in] GET /health");
   console.log("[health] META_APP_ID:", process.env.META_APP_ID);
   console.log("[health] META_APP_SECRET:", process.env.META_APP_SECRET);
   console.log("[health] WEBHOOK_VERIFY_TOKEN:", process.env.WEBHOOK_VERIFY_TOKEN);

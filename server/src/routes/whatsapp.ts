@@ -31,15 +31,19 @@ router.post(
       const tokenUrl = `https://graph.facebook.com/v25.0/oauth/access_token?client_id=${META_APP_ID}&client_secret=${META_APP_SECRET}&code=${code}`;
       console.log("[whatsapp/signup-callback] Exchanging code for token...");
       console.log("[whatsapp/signup-callback] Using client_id:", META_APP_ID);
+      console.log(`[api-out] GET ${tokenUrl}`);
       const tokenRes = await fetch(tokenUrl);
-      const tokenData = (await tokenRes.json()) as Record<string, unknown>;
+      const tokenData = (await tokenRes.json()) as {
+        access_token?: string;
+        error?: { message: string };
+      };
 
       console.log("[whatsapp/signup-callback] Token exchange status:", tokenRes.status);
       console.log("[whatsapp/signup-callback] Full response:", JSON.stringify(tokenData));
 
       if (!tokenData.access_token) {
         res.status(400).json({
-          error: (tokenData.error as Record<string, unknown>)?.message || "Failed to exchange code",
+          error: tokenData.error?.message || "Failed to exchange code",
         });
         return;
       }
@@ -49,6 +53,7 @@ router.post(
       // Get shared WABA info using the debug_token endpoint
       const debugUrl = `https://graph.facebook.com/v25.0/debug_token?input_token=${accessToken}&access_token=${META_APP_ID}|${META_APP_SECRET}`;
       console.log("[whatsapp/signup-callback] Fetching debug_token info...");
+      console.log(`[api-out] GET ${debugUrl} token=${accessToken}`);
       const debugRes = await fetch(debugUrl);
       const debugData = (await debugRes.json()) as {
         data?: {
@@ -79,6 +84,7 @@ router.post(
       // Get phone numbers for this WABA
       const phonesUrl = `https://graph.facebook.com/v25.0/${wabaId}/phone_numbers?access_token=${accessToken}`;
       console.log("[whatsapp/signup-callback] Fetching phone numbers...");
+      console.log(`[api-out] GET ${phonesUrl} token=${accessToken}`);
       const phonesRes = await fetch(phonesUrl);
       const phonesData = (await phonesRes.json()) as {
         data?: Array<{ id: string; display_phone_number: string }>;
@@ -97,8 +103,33 @@ router.post(
         return;
       }
 
+      // Register the phone number with WhatsApp Cloud API
+      console.log("[whatsapp/signup-callback] Registering phone number...");
+      console.log(`[api-out] POST https://graph.facebook.com/v25.0/${phoneNumberId}/register token=${accessToken}`, JSON.stringify({ messaging_product: "whatsapp", pin: "123456" }));
+      const registerRes = await fetch(
+        `https://graph.facebook.com/v25.0/${phoneNumberId}/register`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            messaging_product: "whatsapp",
+            pin: "123456",
+          }),
+        }
+      );
+      const registerData = (await registerRes.json()) as {
+        success?: boolean;
+        error?: { message: string };
+      };
+      console.log("[whatsapp/signup-callback] Register status:", registerRes.status);
+      console.log("[whatsapp/signup-callback] Register response:", JSON.stringify(registerData));
+
       // Subscribe the app to the WABA's webhooks
       console.log("[whatsapp/signup-callback] Subscribing app to WABA webhooks...");
+      console.log(`[api-out] POST https://graph.facebook.com/v25.0/${wabaId}/subscribed_apps token=${accessToken}`);
       const subRes = await fetch(
         `https://graph.facebook.com/v25.0/${wabaId}/subscribed_apps`,
         {
@@ -123,6 +154,7 @@ router.post(
 
 // Check if user has a connected WhatsApp account
 router.get("/account", authMiddleware, (req: AuthRequest, res: Response) => {
+  console.log("[api-in] GET /account");
   const account = getWhatsAppAccountByUser(req.userId!);
   if (account) {
     res.json({

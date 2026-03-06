@@ -24,6 +24,7 @@ async function request<T>(
     headers["Authorization"] = `Bearer ${token}`;
   }
 
+  console.log(`[api] ${options.method || "GET"} ${API_URL}${path}${options.body ? ` ${options.body}` : ""}`);
   const res = await fetch(`${API_URL}${path}`, { ...options, headers });
 
   if (!res.ok) {

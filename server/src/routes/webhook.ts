@@ -11,6 +11,7 @@ const VERIFY_TOKEN = process.env.WEBHOOK_VERIFY_TOKEN || "thunder-zap-verify";
 
 // Webhook verification (Meta sends GET to verify the endpoint)
 router.get("/", (req: Request, res: Response) => {
+  console.log("[api-in] GET /webhook", JSON.stringify(req.query));
   const mode = req.query["hub.mode"];
   const token = req.query["hub.verify_token"];
   const challenge = req.query["hub.challenge"];
@@ -25,6 +26,7 @@ router.get("/", (req: Request, res: Response) => {
 // Receive incoming WhatsApp messages
 router.post("/", (req: Request, res: Response) => {
   const body = req.body;
+  console.log("[api-in] POST /webhook", JSON.stringify({ object: body.object }));
 
   if (body.object !== "whatsapp_business_account") {
     res.sendStatus(404);

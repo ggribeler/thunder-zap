@@ -12,6 +12,7 @@ const router = Router();
 
 // List all conversations for the logged-in user
 router.get("/", authMiddleware, (req: AuthRequest, res: Response) => {
+  console.log("[api-in] GET /conversations");
   const conversations = getConversationsByUser(req.userId!);
   res.json(conversations);
 });
@@ -21,6 +22,7 @@ router.get(
   "/:id/messages",
   authMiddleware,
   (req: AuthRequest, res: Response) => {
+    console.log(`[api-in] GET /conversations/${req.params.id}/messages`);
     const id = req.params.id as string;
     const conversation = getConversationById(parseInt(id), req.userId!);
     if (!conversation) {
@@ -39,6 +41,7 @@ router.post(
   authMiddleware,
   async (req: AuthRequest, res: Response) => {
     const { content } = req.body;
+    console.log(`[api-in] POST /conversations/${req.params.id}/messages`, JSON.stringify({ content }));
     if (!content) {
       res.status(400).json({ error: "Content is required" });
       return;
@@ -59,20 +62,23 @@ router.post(
 
     try {
       // Send via WhatsApp Cloud API
+      const messagesUrl = `https://graph.facebook.com/v25.0/${account.phone_number_id}/messages`;
+      const messagesPayload = JSON.stringify({
+            messaging_product: "whatsapp",
+            to: conversation.contact_phone,
+            type: "text",
+            text: { body: content },
+          });
+      console.log(`[api-out] POST ${messagesUrl} token=${account.access_token}`, messagesPayload);
       const waRes = await fetch(
-        `https://graph.facebook.com/v25.0/${account.phone_number_id}/messages`,
+        messagesUrl,
         {
           method: "POST",
           headers: {
             Authorization: `Bearer ${account.access_token}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            messaging_product: "whatsapp",
-            to: conversation.contact_phone,
-            type: "text",
-            text: { body: content },
-          }),
+          body: messagesPayload,
         }
       );
 
