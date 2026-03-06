@@ -7,14 +7,13 @@ import {
 
 const router = Router();
 
-const META_APP_ID = process.env.META_APP_ID!;
-const META_APP_SECRET = process.env.META_APP_SECRET!;
-
 // Exchange Embedded Signup code for access token and store WABA credentials
 router.post(
   "/signup-callback",
   authMiddleware,
   async (req: AuthRequest, res: Response) => {
+    const META_APP_ID = process.env.META_APP_ID!;
+    const META_APP_SECRET = process.env.META_APP_SECRET!;
     const { code } = req.body;
     const userId = req.userId!;
 
@@ -31,21 +30,16 @@ router.post(
       // Exchange code for access token
       const tokenUrl = `https://graph.facebook.com/v25.0/oauth/access_token?client_id=${META_APP_ID}&client_secret=${META_APP_SECRET}&code=${code}`;
       console.log("[whatsapp/signup-callback] Exchanging code for token...");
+      console.log("[whatsapp/signup-callback] Using client_id:", META_APP_ID);
       const tokenRes = await fetch(tokenUrl);
-      const tokenData = (await tokenRes.json()) as {
-        access_token?: string;
-        error?: { message: string };
-      };
+      const tokenData = (await tokenRes.json()) as Record<string, unknown>;
 
       console.log("[whatsapp/signup-callback] Token exchange status:", tokenRes.status);
-      console.log("[whatsapp/signup-callback] Token received:", !!tokenData.access_token);
-      if (tokenData.error) {
-        console.error("[whatsapp/signup-callback] Token error:", tokenData.error.message);
-      }
+      console.log("[whatsapp/signup-callback] Full response:", JSON.stringify(tokenData));
 
       if (!tokenData.access_token) {
         res.status(400).json({
-          error: tokenData.error?.message || "Failed to exchange code",
+          error: (tokenData.error as Record<string, unknown>)?.message || "Failed to exchange code",
         });
         return;
       }
