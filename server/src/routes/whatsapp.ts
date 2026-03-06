@@ -29,7 +29,7 @@ router.post(
 
     try {
       // Exchange code for access token
-      const tokenUrl = `https://graph.facebook.com/v21.0/oauth/access_token?client_id=${META_APP_ID}&client_secret=${META_APP_SECRET}&code=${code}`;
+      const tokenUrl = `https://graph.facebook.com/v25.0/oauth/access_token?client_id=${META_APP_ID}&client_secret=${META_APP_SECRET}&code=${code}`;
       console.log("[whatsapp/signup-callback] Exchanging code for token...");
       const tokenRes = await fetch(tokenUrl);
       const tokenData = (await tokenRes.json()) as {
@@ -53,7 +53,7 @@ router.post(
       const accessToken = tokenData.access_token;
 
       // Get shared WABA info using the debug_token endpoint
-      const debugUrl = `https://graph.facebook.com/v21.0/debug_token?input_token=${accessToken}&access_token=${META_APP_ID}|${META_APP_SECRET}`;
+      const debugUrl = `https://graph.facebook.com/v25.0/debug_token?input_token=${accessToken}&access_token=${META_APP_ID}|${META_APP_SECRET}`;
       console.log("[whatsapp/signup-callback] Fetching debug_token info...");
       const debugRes = await fetch(debugUrl);
       const debugData = (await debugRes.json()) as {
@@ -83,7 +83,7 @@ router.post(
       }
 
       // Get phone numbers for this WABA
-      const phonesUrl = `https://graph.facebook.com/v21.0/${wabaId}/phone_numbers?access_token=${accessToken}`;
+      const phonesUrl = `https://graph.facebook.com/v25.0/${wabaId}/phone_numbers?access_token=${accessToken}`;
       console.log("[whatsapp/signup-callback] Fetching phone numbers...");
       const phonesRes = await fetch(phonesUrl);
       const phonesData = (await phonesRes.json()) as {
@@ -106,7 +106,7 @@ router.post(
       // Subscribe the app to the WABA's webhooks
       console.log("[whatsapp/signup-callback] Subscribing app to WABA webhooks...");
       const subRes = await fetch(
-        `https://graph.facebook.com/v21.0/${wabaId}/subscribed_apps`,
+        `https://graph.facebook.com/v25.0/${wabaId}/subscribed_apps`,
         {
           method: "POST",
           headers: { Authorization: `Bearer ${accessToken}` },

@@ -60,7 +60,7 @@ router.post(
     try {
       // Send via WhatsApp Cloud API
       const waRes = await fetch(
-        `https://graph.facebook.com/v21.0/${account.phone_number_id}/messages`,
+        `https://graph.facebook.com/v25.0/${account.phone_number_id}/messages`,
         {
           method: "POST",
           headers: {

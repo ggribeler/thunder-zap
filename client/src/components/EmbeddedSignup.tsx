@@ -22,6 +22,9 @@ declare global {
           config_id: string;
           response_type: string;
           override_default_response_type: boolean;
+          extras: {
+            setup: object;
+          };
         }
       ) => void;
     };
@@ -39,6 +42,36 @@ export default function EmbeddedSignup({ onSuccess }: Props) {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    // Listen for Embedded Signup session logging messages
+    const sessionInfoListener = (event: MessageEvent) => {
+      if (
+        event.origin !== "https://www.facebook.com" &&
+        event.origin !== "https://web.facebook.com"
+      ) {
+        return;
+      }
+
+      try {
+        const data =
+          typeof event.data === "string" ? JSON.parse(event.data) : event.data;
+        console.log("[EmbeddedSignup] Session event:", JSON.stringify(data));
+
+        if (data.type === "WA_EMBEDDED_SIGNUP") {
+          if (data.event === "FINISH") {
+            console.log("[EmbeddedSignup] Signup finished. Phone:", data.data?.phone_number_id, "WABA:", data.data?.waba_id);
+          } else if (data.event === "CANCEL") {
+            console.log("[EmbeddedSignup] Signup cancelled at step:", data.data?.current_step);
+          } else if (data.event === "ERROR") {
+            console.error("[EmbeddedSignup] Signup error:", data.data?.error_message);
+          }
+        }
+      } catch {
+        // Not a JSON message, ignore
+      }
+    };
+
+    window.addEventListener("message", sessionInfoListener);
+
     // Load Facebook SDK
     window.fbAsyncInit = () => {
       window.FB.init({
@@ -61,6 +94,10 @@ export default function EmbeddedSignup({ onSuccess }: Props) {
     script.async = true;
     script.defer = true;
     document.body.appendChild(script);
+
+    return () => {
+      window.removeEventListener("message", sessionInfoListener);
+    };
   }, []);
 
   function handleSignup() {
@@ -104,6 +141,9 @@ export default function EmbeddedSignup({ onSuccess }: Props) {
           config_id: process.env.NEXT_PUBLIC_EMBEDDED_SIGNUP_CONFIG_ID || "",
           response_type: "code",
           override_default_response_type: true,
+           extras: {
+        setup: {},
+      }
         }
       );
     } catch (err) {
