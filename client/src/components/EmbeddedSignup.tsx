@@ -80,8 +80,15 @@ export default function EmbeddedSignup({ onSuccess }: Props) {
 
     // Load Facebook SDK
     window.fbAsyncInit = () => {
+      const appId = process.env.NEXT_PUBLIC_META_APP_ID;
+      console.log("[EmbeddedSignup] NEXT_PUBLIC_META_APP_ID:", appId);
+      if (!appId) {
+        console.error("[EmbeddedSignup] NEXT_PUBLIC_META_APP_ID is not set! FB SDK will not work.");
+        setError("App configuration error: Meta App ID is missing");
+        return;
+      }
       window.FB.init({
-        appId: process.env.NEXT_PUBLIC_META_APP_ID || "",
+        appId,
         cookie: true,
         xfbml: true,
         version: "v21.0",
